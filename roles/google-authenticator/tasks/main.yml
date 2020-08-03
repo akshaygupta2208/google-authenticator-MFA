@@ -1,0 +1,25 @@
+---
+- name: Install google-authenticator
+  yum: pkg=google-authenticator state=present
+
+- name: Updating /etc/pam.d/sshd file for adding GA entry
+  lineinfile:
+    dest: /etc/pam.d/sshd
+    line: "{{ item.line }}"
+  with_items:
+    - { line: 'auth required pam_google_authenticator.so nullok' }
+    - { line: 'auth required pam_permit.so' }
+
+- name: Updating /etc/ssh/sshd_config file for adding GA entry
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: "{{ item.line }}"
+  with_items:
+    - {regexp: '^ChallengeResponseAuthentication', line:   'ChallengeResponseAuthentication yes'}
+    - {regexp: '^AuthenticationMethods', line:   'AuthenticationMethods publickey,keyboard-interactive'}
+
+- name: Restart sshd service 
+  service: name=sshd state=restarted
+
+- name: place /etc/ssh/sshrc file 
+  copy: src=sshrc dest=/etc/ssh/ mode=755 owner=root group=root
